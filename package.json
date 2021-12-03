@@ -16,6 +16,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "start": "node ./lib/index.js"
+    "start": "node ./lib/index.js",
+    "clean": "rm -rf ./gen"
   }
 }

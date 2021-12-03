@@ -1,4 +1,5 @@
 const fs = require('fs');
+const path = require('path');
 const logger = require('pino')();
 const glob = require('glob');
 const readline = require('readline');
@@ -7,11 +8,6 @@ const handlebars = require('handlebars');
 // Ignored files, directories and extensions
 const IGNORE = ['/node_modules/', '/dist/', '.git'];
 const FILE_HEADER_REGEX = '{-# START_FILE (.+?) #-}';
-
-function exitWithLog(code: number, reason: string) {
-  logger.error(reason);
-  process.exit(code);
-}
 
 // Generate a handlebars file from a template project
 export function generate(projectRootPath?: string, outputFile?: string) {
@@ -22,7 +18,8 @@ export function generate(projectRootPath?: string, outputFile?: string) {
 
   glob(projectRootPath + '/**/*', {nodir: true}, (err, res: string[]) => {
     if (err) {
-      exitWithLog(1, `Failed to read directory '${projectRootPath}': ${err}`);
+      logger.error(`Failed to read directory '${projectRootPath}': ${err}`);
+      process.exit(1);
     } else {
       IGNORE.forEach((i) => {
         res = res.filter((x) => !x.includes(i));
@@ -40,7 +37,7 @@ export function generate(projectRootPath?: string, outputFile?: string) {
 }
 
 // Consume a handlebars file to generate a template project
-export async function consume(inputFile: string, opts?: any) {
+export async function consume(inputFile: string, replacements: any) {
   const stream = fs.createReadStream(inputFile);
   const rl = readline.createInterface({
     input: stream,
@@ -50,22 +47,25 @@ export async function consume(inputFile: string, opts?: any) {
   let filename;
   let buffer = '';
 
-  for await (const line of rl) {
+  for await (let line of rl) {
     let res = (line as string).match(FILE_HEADER_REGEX);
     if (res !== null) {
       if (filename) {
         var template = handlebars.compile(buffer);
-        let output: string = template({name: 'wqsz7xn'});
-        // fs.writeFileSync('./gen/' + filename, output);
+        let output: string = template(replacements);
+        console.log(filename);
+        fs.mkdirSync(path.dirname('./gen/' + filename), {recursive: true});
+        fs.writeFileSync('./gen/' + filename, output);
       }
       filename = res[1];
       buffer = '';
       continue;
     } else {
+      line += '\n';
       buffer += line;
     }
   }
 }
 
 generate('/home/wqsz7xn/Desktop/subql-starter', 'output.hbs');
-consume('output.hbs');
+consume('output.hbs', {name: 'wqsz7xn'});
