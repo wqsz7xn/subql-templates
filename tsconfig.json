@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2017",
+    "noImplicitAny": false,
+    "moduleResolution": "node",
+    "outDir": "lib",
+    "baseUrl": ".",
+    "types": ["node"],
+    "experimentalDecorators": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "lib": ["ES2017"],
+    "emitDecoratorMetadata": true,
+    "declaration": true,
+    "sourceMap": true,
+    "inlineSources": true,
+    "composite": true,
+    "skipLibCheck": true
+  },
+  "exclude": ["**/node_modules/**", "./lib/**/*"]
+}
