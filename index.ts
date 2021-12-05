@@ -1,13 +1,16 @@
 const fs = require('fs');
+const https = require('https');
 const path = require('path');
 const logger = require('pino')();
 const glob = require('glob');
 const readline = require('readline');
 const handlebars = require('handlebars');
+import {templates} from './templates';
 
 // Ignored files, directories and extensions
 const IGNORE = ['/node_modules/', '/dist/', '.git'];
 const FILE_HEADER_REGEX = '{-# START_FILE (.+?) #-}';
+const HTTPS_REMOTE = 'https://raw.githubusercontent.com/wqsz7xn/subql-templates/main/';
 
 // Generate a handlebars file from a template project
 export function generate(rootPath?: string, outputFile?: string) {
@@ -19,7 +22,7 @@ export function generate(rootPath?: string, outputFile?: string) {
   glob(rootPath + '/**/*', {nodir: true}, (err, res: string[]) => {
     if (err) {
       logger.error(`Failed to read directory '${rootPath}': ${err}`);
-      process.exit(1);
+      throw err;
     } else {
       IGNORE.forEach((i) => {
         res = res.filter((x) => !x.includes(i));
@@ -53,7 +56,6 @@ export async function consume(inputPath: string, replacements: any) {
       if (filename) {
         var template = handlebars.compile(buffer);
         let output: string = template(replacements);
-        console.log(filename);
         fs.mkdirSync(path.dirname('./gen/' + filename), {recursive: true});
         fs.writeFileSync('./gen/' + filename, output);
       }
@@ -67,5 +69,24 @@ export async function consume(inputPath: string, replacements: any) {
   }
 }
 
-generate('/home/wqsz7xn/Desktop/subql-starter', 'output.hbs');
-consume('output.hbs', {name: 'wqsz7xn'});
+export function consumeHttps(path: string, template: string, replacements: any) {
+  if (Object.keys(templates).includes(template)) {
+    let body = '';
+    https.get(HTTPS_REMOTE + 'package.json', (response) => {
+      response.on('data', (chunk) => {
+        body += chunk;
+      });
+
+      response.on('end', () => {
+        console.log(body);
+      });
+    });
+  } else {
+    const err = Error(`Could not find template ${template} in template repository`);
+    throw err;
+  }
+}
+
+generate('/home/wqsz7xn/testing/subql-starter', 'subql-starter.hbs');
+// consume('output.hbs', {name: 'wqsz7xn'});
+// consumeHttps('subql-starter', {name: 'wqsz7xn'});

@@ -1,6 +1,6 @@
 {
-  "name": "subql-templates",
-  "version": "1.0.0",
+  "name": "@subql/templates",
+  "version": "0.0.0",
   "description": "project templates for subquery",
   "main": "index.js",
   "author": "wqsz7xn",
