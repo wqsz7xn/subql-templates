@@ -10,15 +10,15 @@ const IGNORE = ['/node_modules/', '/dist/', '.git'];
 const FILE_HEADER_REGEX = '{-# START_FILE (.+?) #-}';
 
 // Generate a handlebars file from a template project
-export function generate(projectRootPath?: string, outputFile?: string) {
-  if (!projectRootPath) projectRootPath = './';
+export function generate(rootPath?: string, outputFile?: string) {
+  if (!rootPath) rootPath = './';
   if (!outputFile) outputFile = 'output.hbs';
   if (outputFile[outputFile.length - 1] == '/') outputFile = outputFile.substring(0, outputFile.length - 2);
   let contents = '';
 
-  glob(projectRootPath + '/**/*', {nodir: true}, (err, res: string[]) => {
+  glob(rootPath + '/**/*', {nodir: true}, (err, res: string[]) => {
     if (err) {
-      logger.error(`Failed to read directory '${projectRootPath}': ${err}`);
+      logger.error(`Failed to read directory '${rootPath}': ${err}`);
       process.exit(1);
     } else {
       IGNORE.forEach((i) => {
@@ -26,19 +26,19 @@ export function generate(projectRootPath?: string, outputFile?: string) {
       });
 
       res.forEach((filename) => {
-        const fnRel = filename.replace(projectRootPath + '/', '');
-        contents += `{-# START_FILE ${fnRel} #-}\n`;
+        const filenameRelative = filename.replace(rootPath + '/', '');
+        contents += `{-# START_FILE ${filenameRelative} #-}\n`;
         contents += fs.readFileSync(filename, 'utf8');
       });
 
-      fs.writeFileSync(outputFile, contents);
+      fs.writeFileSync(rootPath + outputFile, contents);
     }
   });
 }
 
 // Consume a handlebars file to generate a template project
-export async function consume(inputFile: string, replacements: any) {
-  const stream = fs.createReadStream(inputFile);
+export async function consume(inputPath: string, replacements: any) {
+  const stream = fs.createReadStream(inputPath);
   const rl = readline.createInterface({
     input: stream,
     crlfDelay: Infinity,
