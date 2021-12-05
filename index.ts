@@ -1,10 +1,8 @@
-const fs = require('fs');
-const https = require('https');
-const path = require('path');
-const logger = require('pino')();
-const glob = require('glob');
-const readline = require('readline');
-const handlebars = require('handlebars');
+import fs from 'fs';
+import https from 'https';
+import path from 'path';
+import glob from 'glob';
+import handlebars from 'handlebars';
 import {templates} from './templates';
 
 // Ignored files, directories and extensions
@@ -12,16 +10,26 @@ const IGNORE = ['/node_modules/', '/dist/', '.git'];
 const FILE_HEADER_REGEX = '{-# START_FILE (.+?) #-}';
 const HTTPS_REMOTE = 'https://raw.githubusercontent.com/wqsz7xn/subql-templates/main/';
 
-// Generate a handlebars file from a template project
-export function generate(rootPath?: string, outputFile?: string) {
-  if (!rootPath) rootPath = './';
-  if (!outputFile) outputFile = 'output.hbs';
-  if (outputFile[outputFile.length - 1] == '/') outputFile = outputFile.substring(0, outputFile.length - 2);
+/**
+ * @description Consume a template project to generate a handlebars file
+ * @param {string} projectRootPath Path to the project root to operate on
+ * @param {string} outputFile Name of the output file (including extension)
+ */
+export function consume(projectRootPath?: string, outputFile?: string) {
+  if (!projectRootPath) {
+    projectRootPath = './';
+  }
+  if (projectRootPath[projectRootPath.length - 1] === '/') {
+    projectRootPath = projectRootPath[projectRootPath.length - 2];
+  }
+  if (!outputFile) {
+    outputFile = `${projectRootPath.split(path.sep).slice(-1).pop()}.hbs`;
+  }
+
   let contents = '';
 
-  glob(rootPath + '/**/*', {nodir: true}, (err, res: string[]) => {
+  glob(`${projectRootPath}/**/*`, {nodir: true}, (err, res: string[]) => {
     if (err) {
-      logger.error(`Failed to read directory '${rootPath}': ${err}`);
       throw err;
     } else {
       IGNORE.forEach((i) => {
@@ -29,64 +37,55 @@ export function generate(rootPath?: string, outputFile?: string) {
       });
 
       res.forEach((filename) => {
-        const filenameRelative = filename.replace(rootPath + '/', '');
+        const filenameRelative = filename.replace(`${projectRootPath}/`, '');
         contents += `{-# START_FILE ${filenameRelative} #-}\n`;
         contents += fs.readFileSync(filename, 'utf8');
       });
 
-      fs.writeFileSync(rootPath + outputFile, contents);
+      fs.writeFileSync(`${projectRootPath}/${outputFile}`, contents);
     }
   });
 }
 
-// Consume a handlebars file to generate a template project
-export async function consume(inputPath: string, replacements: any) {
-  const stream = fs.createReadStream(inputPath);
-  const rl = readline.createInterface({
-    input: stream,
-    crlfDelay: Infinity,
-  });
-
-  let filename;
-  let buffer = '';
-
-  for await (let line of rl) {
-    let res = (line as string).match(FILE_HEADER_REGEX);
-    if (res !== null) {
-      if (filename) {
-        var template = handlebars.compile(buffer);
-        let output: string = template(replacements);
-        fs.mkdirSync(path.dirname('./gen/' + filename), {recursive: true});
-        fs.writeFileSync('./gen/' + filename, output);
-      }
-      filename = res[1];
-      buffer = '';
-      continue;
-    } else {
-      line += '\n';
-      buffer += line;
-    }
-  }
-}
-
-export function consumeHttps(path: string, template: string, replacements: any) {
-  if (Object.keys(templates).includes(template)) {
+/**
+ * @description Generate a template project from a handlebars file fetched over https
+ * @param {string} outputPath Output subpath for generated files
+ * @param {string} templateName Name of the template
+ * @param {any} replacements Replacements to be made via handlebars
+ */
+export function generate(outputPath: string, templateName: string, replacements: any) {
+  if (Object.keys(templates).includes(templateName)) {
+    let templateFile = templateName + '.hbs';
     let body = '';
-    https.get(HTTPS_REMOTE + 'package.json', (response) => {
+
+    https.get(HTTPS_REMOTE + templateFile, (response) => {
       response.on('data', (chunk) => {
         body += chunk;
       });
 
       response.on('end', () => {
-        console.log(body);
+        let filename;
+        let fileBuffer = '';
+
+        for (const line of body.split('\n')) {
+          let result = (line as string).match(FILE_HEADER_REGEX);
+          if (result !== null) {
+            if (filename) {
+              let template = handlebars.compile(fileBuffer);
+              let outputBuffer: string = template(replacements);
+              fs.mkdirSync(path.dirname(`${outputPath}/${templateName}/${filename}`), {recursive: true});
+              fs.writeFileSync(`${outputPath}/${templateName}/${filename}`, outputBuffer);
+            }
+            filename = result[1];
+            fileBuffer = '';
+            continue;
+          } else {
+            fileBuffer += line + '\n';
+          }
+        }
       });
     });
   } else {
-    const err = Error(`Could not find template ${template} in template repository`);
-    throw err;
+    throw Error(`Could not find template '${templateName}' in template repository`);
   }
 }
-
-generate('/home/wqsz7xn/testing/subql-starter', 'subql-starter.hbs');
-// consume('output.hbs', {name: 'wqsz7xn'});
-// consumeHttps('subql-starter', {name: 'wqsz7xn'});
