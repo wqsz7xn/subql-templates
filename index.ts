@@ -8,7 +8,7 @@ import {templates} from './templates';
 // Ignored files, directories and extensions
 const IGNORE = ['/node_modules/', '/dist/', '.git'];
 const FILE_HEADER_REGEX = '{-# START_FILE (.+?) #-}';
-const HTTPS_REMOTE = 'https://raw.githubusercontent.com/wqsz7xn/subql-templates/main/';
+const HTTPS_REMOTE = 'https://raw.githubusercontent.com/wqsz7xn/subql-templates/main';
 
 /**
  * @description Consume a template project to generate a handlebars file
@@ -58,12 +58,14 @@ export function generate(outputPath: string, templateName: string, replacements:
     let templateFile = templateName + '.hbs';
     let body = '';
 
-    https.get(HTTPS_REMOTE + templateFile, (response) => {
+    https.get(`${HTTPS_REMOTE}/${templateFile}`, (response) => {
       response.on('data', (chunk) => {
         body += chunk;
       });
 
       response.on('end', () => {
+        console.log(body);
+        console.log(`${HTTPS_REMOTE}/${templateFile}`);
         let filename;
         let fileBuffer = '';
 
@@ -78,7 +80,6 @@ export function generate(outputPath: string, templateName: string, replacements:
             }
             filename = result[1];
             fileBuffer = '';
-            continue;
           } else {
             fileBuffer += line + '\n';
           }
