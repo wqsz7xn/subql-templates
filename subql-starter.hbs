@@ -70,7 +70,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 {-# START_FILE package.json #-}
 {
-  "name": "{{subql_name}}",
+  "name": "subql-starter",
   "version": "{{subql_version}}",
   "description": "{{subql_description}}",
   "main": "dist/index.js",
@@ -80,8 +80,8 @@ SOFTWARE.
     "test": "jest",
     "codegen": "./node_modules/.bin/subql codegen"
   },
-  "homepage": "https://github.com/subquery/subql-starter",
-  "repository": "{{subql_repository}}",
+  "homepage": "{{subql_repository}}",
+  "repository": "github:subquery/subql-starter",
   "files": [
     "dist",
     "schema.graphql",
@@ -95,13 +95,12 @@ SOFTWARE.
     "typescript": "^4.1.3",
     "@subql/cli": "latest"
   }
-}
-{-# START_FILE project.yaml #-}
+}{-# START_FILE project.yaml #-}
 specVersion: 0.2.0
-name: {{subql_name}}
-version: 1.0.0
-description: ''
-repository: ''
+name: "{{subql_name}}"
+version: "{{subql_version}}"
+description: "{{subql_description}}"
+repository: "{{subql_repository}}"
 schema:
   file: ./schema.graphql
 network:
